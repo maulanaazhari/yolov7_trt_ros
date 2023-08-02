@@ -308,7 +308,7 @@ class Predictor(BaseEngine):
     def __init__(self, engine_path):
         super(Predictor, self).__init__(engine_path)
         self.n_classes = 4  # your model classes
-        self.class_names = ["small_bag", "big_bag", "vessel", "usv"]
+        self.class_names = ["small_box", "big_box", "ship", "usv"]
     
     def inference(self, img, conf=0.5, end2end=False):
         img, ratio = preproc(img, self.imgsz, self.mean, self.std)

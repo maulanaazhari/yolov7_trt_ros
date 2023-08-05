@@ -37,6 +37,7 @@ class BaseEngine(object):
          'hair drier', 'toothbrush' ]
 
         self.cfx = cuda.Device(0).make_context()
+        # try:
         logger = trt.Logger(trt.Logger.WARNING)
         logger.min_severity = trt.Logger.Severity.ERROR
         runtime = trt.Runtime(logger)
@@ -60,6 +61,8 @@ class BaseEngine(object):
                 self.inputs.append({'host': host_mem, 'device': device_mem})
             else:
                 self.outputs.append({'host': host_mem, 'device': device_mem})
+        # except:
+        #     self.cfx.pop()
 
 
     def infer(self, img):

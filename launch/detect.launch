@@ -7,7 +7,7 @@
   <node pkg="yolov7_trt_ros" name="detector" type="detect_ros.py" output="screen">
     <param name="image_in" value="/zed2i/zed_node/rgb/image_rect_color"/>
     <param name="image_out" value="/detector_out"/>
-    <param name="model_path" value="$(find yolov7_trt_ros)/models/yolov7-tiny.trt" />
+    <param name="model_path" value="$(find yolov7_trt_ros)/models/yolov7-tiny-jet.trt" />
     <param name="compressed" value="$(arg compressed)" />
     <param name="topic_in" value="$(arg topic_name)"/>
     <param name="display" value="$(arg display)"/>

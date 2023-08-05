@@ -32,5 +32,5 @@ include_directories(
 
 catkin_python_setup()
 
-catkin_install_python(PROGRAMS script/detect_ros.py script/tensorrt_python/utils/utils.py
+catkin_install_python(PROGRAMS script/detect_ros.py
                       DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

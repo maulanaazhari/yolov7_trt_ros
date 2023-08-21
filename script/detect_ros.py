@@ -95,7 +95,7 @@ class BaseEngine(object):
     def destory(self):
         self.cfx.pop()
 
-    def detect_video(self, video_path, conf=0.5, end2end=False):
+    def detect_video(self, video_path, conf=0.3, end2end=False):
         cap = cv2.VideoCapture(video_path)
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         fps = int(round(cap.get(cv2.CAP_PROP_FPS)))
@@ -135,7 +135,7 @@ class BaseEngine(object):
         cap.release()
         cv2.destroyAllWindows()
 
-    def inference(self, img_path, conf=0.5, end2end=False):
+    def inference(self, img_path, conf=0.3, end2end=False):
         origin_img = cv2.imread(img_path)
         img, ratio = preproc(origin_img, self.imgsz, self.mean, self.std)
         data = self.infer(img)
@@ -358,7 +358,10 @@ class Yolov7Detector:
             np_image = np.frombuffer(msg.data, dtype=np.uint8)
             cv_image = cv2.imdecode(np_image, cv2.IMREAD_UNCHANGED)
         else:
-            cv_image = self.img_bridge.imgmsg_to_cv2(msg)
+            cv_image = self.img_bridge.imgmsg_to_cv2(msg, "rgb8")
+            if (cv_image.shape[2] == 4):
+                # cv_image = cv_image[:,:,:3]
+                cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGBA2RGB)
 
         self.cv_image = cv_image
 
@@ -413,7 +416,7 @@ class Yolov7Detector:
                 # Publish new image
                 self.image_pub.publish(msg)
             else:
-                msg = self.img_bridge.cv2_to_imgmsg(self.image)
+                msg = self.img_bridge.cv2_to_imgmsg(self.cv_image, "rgb8")
                 msg.header.frame_id = self.frame_id
                 msg.header.stamp = rospy.Time.now()
                 self.image_pub.publish(msg)
@@ -423,7 +426,7 @@ def main(args):
     
     model_path = rospy.get_param('~model_path')
     compressed = rospy.get_param('~compressed', default=False)
-    threshold = rospy.get_param('~threshold', default=0.4)
+    threshold = rospy.get_param('~threshold', default=0.3)
     display = rospy.get_param('~display', default=False)
     image_in = rospy.get_param('~image_in', default="image_in")
     image_out = rospy.get_param('~image_out', default="image_out")

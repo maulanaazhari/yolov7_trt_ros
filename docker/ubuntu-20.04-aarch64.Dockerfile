@@ -23,13 +23,8 @@ FROM nvidia/cuda:${CUDA_VERSION}-devel-ubuntu20.04
 ENV TRT_VERSION 8.6.1.6
 SHELL ["/bin/bash", "-c"]
 
-# Setup user account
-ARG uid=1000
-ARG gid=1000
-RUN groupadd -r -f -g ${gid} user && useradd -o -r -l -u ${uid} -g ${gid} -ms /bin/bash user
-RUN usermod -aG sudo user
-RUN echo 'user:nvidia' | chpasswd
-RUN mkdir -p /workspace && chown user /workspace
+RUN mkdir -p /home/workspace
+RUN mkdir -p /home/catkin_ws/src/yolov7_trt_ros
 
 # Required to build Ubuntu 20.04 without user prompts with DLFW container
 ENV DEBIAN_FRONTEND=noninteractive
@@ -94,27 +89,13 @@ RUN pip3 install jupyter jupyterlab
 # Workaround to remove numpy installed with tensorflow
 RUN pip3 install --upgrade numpy
 
-# Download NGC client
-# RUN cd /usr/local/bin && wget https://ngc.nvidia.com/downloads/ngccli_arm64.zip && unzip ngccli_arm64.zip && chmod u+x ngc-cli/ngc && rm ngccli_arm64.zip ngc-cli.md5 && echo "no-apikey\nascii\n" | ngc-cli/ngc config set
-
 # Set environment and working directory
 ENV TRT_LIBPATH /usr/lib/aarch64-linux-gnu/
-ENV TRT_OSSPATH /workspace/TensorRT
+ENV TRT_OSSPATH /home/workspace/TensorRT
 ENV PATH="${PATH}:/usr/local/bin/ngc-cli"
 ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${TRT_OSSPATH}/build/out:${TRT_LIBPATH}"
-# WORKDIR /workspace
 
-
-WORKDIR /catkin_ws
-
-## INSTALLING ROS NOETIC
-# setup timezone
-# RUN echo 'Etc/UTC' > /etc/timezone && \
-#     ln -s /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
-#     apt-get update && \
-#     apt-get install -q -y --no-install-recommends tzdata && \
-#     rm -rf /var/lib/apt/lists/*
-
+WORKDIR /home/catkin_ws
 # install packages
 RUN apt-get update && apt-get install -q -y --no-install-recommends \
     dirmngr \
@@ -135,13 +116,17 @@ ENV ROS_DISTRO noetic
 
 # install ros packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-noetic-desktop-full=1.5.0-1* \
-    && rm -rf /var/lib/apt/lists/*
+    ros-noetic-ros-base=1.5.0-1*
 
-USER user
-RUN source /opt/ros/noetic/setup.bash
-VOLUME ./.. /catkin_ws/src/yolov7_trt_ros
-RUN catkin_make
-RUN source /catkin_ws/devel/setup.bash
+ENV PATH="${PATH}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/share"
 
-RUN CMD ["roslaunch", "yolov7_trt_ros", "detect.launch"]
+# INSTALLING yolov7_trt_ros
+COPY . /home/catkin_ws/src/yolov7_trt_ros
+RUN pip install matplotlib
+RUN apt-get install -y --no-install-recommends ros-noetic-vision-msgs ros-noetic-cv-bridge
+RUN /bin/bash -c '. /opt/ros/noetic/setup.bash; cd /home/catkin_ws; catkin_make'
+
+# setup entrypoint
+COPY ./ros_entrypoint.sh .
+ENTRYPOINT ["/home/catkin_ws/ros_entrypoint.sh"]
+CMD ["bash"]

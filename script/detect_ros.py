@@ -50,6 +50,7 @@ class BaseEngine(object):
         self.inputs, self.outputs, self.bindings = [], [], []
         self.stream = cuda.Stream()
         # self.cfx = cuda.Device(0).make_context()
+        print(trt.__version__)
 
         for binding in engine:
             size = trt.volume(engine.get_binding_shape(binding))
@@ -312,6 +313,7 @@ class Predictor(BaseEngine):
         super(Predictor, self).__init__(engine_path)
         self.n_classes = 4  # your model classes
         self.class_names = ["small_box", "big_box", "ship", "usv"]
+        self.get_fps()
     
     def inference(self, img, conf=0.5, end2end=False):
         img, ratio = preproc(img, self.imgsz, self.mean, self.std)

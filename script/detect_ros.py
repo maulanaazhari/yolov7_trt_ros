@@ -50,7 +50,7 @@ class BaseEngine(object):
         self.inputs, self.outputs, self.bindings = [], [], []
         self.stream = cuda.Stream()
         # self.cfx = cuda.Device(0).make_context()
-        print(trt.__version__)
+        # print(trt.__version__)
 
         for binding in engine:
             size = trt.volume(engine.get_binding_shape(binding))
@@ -356,6 +356,7 @@ class Yolov7Detector:
     def image_callback(self, msg):
         self.frame_id = msg.header.frame_id
 
+        # t0 = time.perf_counter()
         if self.compressed:
             np_image = np.frombuffer(msg.data, dtype=np.uint8)
             cv_image = cv2.imdecode(np_image, cv2.IMREAD_UNCHANGED)
@@ -368,6 +369,8 @@ class Yolov7Detector:
         self.cv_image = cv_image
 
         boxes, scores, idxs = self.predictor.inference(self.cv_image, self.conf, end2end=True)
+        # print((time.perf_counter() - t0)*1000, 'ms')
+        
         detections = Detection2DArray()
         detections.header.stamp = msg.header.stamp
         detections.header.frame_id = msg.header.frame_id
@@ -411,17 +414,17 @@ class Yolov7Detector:
         if self.display:
             display_img = vis(self.cv_image, boxes, scores, idxs, conf=self.conf, class_names=self.predictor.class_names)
             if self.compressed:
-                msg = CompressedImage()
-                msg.header.stamp = rospy.Time.now()
-                msg.format = "jpeg"
-                msg.data = np.array(cv2.imencode('.jpg', display_img)[1]).tostring()
+                pub_msg = CompressedImage()
+                pub_msg.header.stamp = msg.header.stamp
+                pub_msg.format = "jpeg"
+                pub_msg.data = np.array(cv2.imencode('.jpg', display_img)[1]).tostring()
                 # Publish new image
-                self.image_pub.publish(msg)
+                self.image_pub.publish(pub_msg)
             else:
-                msg = self.img_bridge.cv2_to_imgmsg(self.cv_image, "rgb8")
-                msg.header.frame_id = self.frame_id
-                msg.header.stamp = rospy.Time.now()
-                self.image_pub.publish(msg)
+                pub_msg = self.img_bridge.cv2_to_imgmsg(self.cv_image, "rgb8")
+                pub_msg.header.frame_id = self.frame_id
+                pub_msg.header.stamp = msg.header.stamp
+                self.image_pub.publish(pub_msg)
 
 def main(args):
     rospy.init_node('detect', anonymous=True)

@@ -177,8 +177,7 @@ Yolo::Yolo(char* model_path) {
   initLibNvInferPlugins(&gLogger, "");
   engine = runtime->deserializeCudaEngine((void*)&buf[0], mdsize, nullptr);
   std::cout<<"engine is created"<<std::endl;
-  std::cout<<"engine "<<engine<<std::endl;
-  auto in_dims = engine->getBindingDimensions(engine->getBindingIndex("image_arrays"));
+  auto in_dims = engine->getBindingDimensions(0);
   iH = in_dims.d[2];
   iW = in_dims.d[3];
   std::cout<<iH <<" "<<iW<<std::endl;

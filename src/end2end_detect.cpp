@@ -16,7 +16,9 @@ int main(int argc, char** argv) {
     }
     // run inference
     auto start = std::chrono::system_clock::now();
-    yolo.Infer(img.cols, img.rows, img.channels(), img.data, Boxes, ClassIndexs, BboxNum);
+    for (int num =0; num < 1; num++) {
+      yolo.Infer(img.cols, img.rows, img.channels(), img.data, Boxes, ClassIndexs, BboxNum);
+    };
     auto end = std::chrono::system_clock::now();
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 

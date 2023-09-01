@@ -57,22 +57,6 @@ include_directories(
   ${CUDA_INCLUDE_DIRS}
 )
 
-add_library(${PROJECT_NAME}_norm 
-            src/norm_detect.cpp)
-target_include_directories(${PROJECT_NAME}_norm PUBLIC
-  ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
-target_link_libraries(${PROJECT_NAME}_norm
-            ${catkin_LIBRARIES} 
-            ${OpenCV_LIBRARIES}
-            ${CUDA_LIBRARIES}
-            nvinfer
-            nvinfer_plugin
-            cuda
-            cudart)
-
-add_executable(norm_detect src/norm_detect)
-target_link_libraries(norm_detect ${catkin_LIBRARIES} ${PROJECT_NAME}_norm)
-
 add_library(${PROJECT_NAME}_end2end 
             src/end2end_detect.cpp)
 target_include_directories(${PROJECT_NAME}_end2end PUBLIC
@@ -89,20 +73,7 @@ target_link_libraries(${PROJECT_NAME}_end2end
 add_executable(end2end_detect src/end2end_detect)
 target_link_libraries(end2end_detect ${catkin_LIBRARIES} ${PROJECT_NAME}_end2end)
 
-add_library(${PROJECT_NAME}_grabcut
-            src/grabcut.cpp)
-target_include_directories(${PROJECT_NAME}_grabcut PUBLIC /usr/local/lib)
-target_link_libraries(${PROJECT_NAME}_grabcut
-            ${catkin_LIBRARIES} 
-            ${OpenCV_LIBRARIES}
-            ${CUDA_LIBRARIES}
-            grabcut
-            cuda)
-
-add_executable(gc src/grabcut)
-target_link_libraries(gc ${catkin_LIBRARIES} ${PROJECT_NAME}_grabcut)
-
-catkin_python_setup()
+# catkin_python_setup()
 
 catkin_install_python(PROGRAMS script/detect_ros.py
                       DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

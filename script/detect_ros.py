@@ -6,7 +6,7 @@ import sys
 import rospy
 import cv2
 import time
-from std_msgs.msg import String
+from std_msgs.msg import String, Float64
 from sensor_msgs.msg import Image, CompressedImage
 from vision_msgs.msg import Detection2DArray, Detection2D, BoundingBox2D, ObjectHypothesisWithPose
 import numpy as np
@@ -20,6 +20,9 @@ import pycuda.driver as cuda
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+
+from fastsam_ros_msgs.msg import Box, DetectionArray, Detection
+from fastsam_ros_msgs.utils import *
 
 class BaseEngine(object):
     def __init__(self, engine_path):
@@ -312,7 +315,7 @@ class Predictor(BaseEngine):
     def __init__(self, engine_path):
         super(Predictor, self).__init__(engine_path)
         self.n_classes = 4  # your model classes
-        self.class_names = ["small_box", "big_box", "ship", "usv"]
+        self.class_names = ["small_object", "big_object", "ship", "usv"]
         self.get_fps()
     
     def inference(self, img, conf=0.5, end2end=False):
@@ -339,6 +342,8 @@ class Yolov7Detector:
         self.compressed = compressed
         self.display = display
         self.img_bridge = CvBridge()
+        self.n_classes = self.predictor.n_classes
+        self.class_names = self.predictor.class_names
 
         if self.compressed:
             self.image_sub = rospy.Subscriber(image_in +'/compressed', CompressedImage, self.image_callback, queue_size=1)
@@ -352,29 +357,28 @@ class Yolov7Detector:
                 self.image_pub = rospy.Publisher(image_out, Image, queue_size=1)
 
         self.detection_pub = rospy.Publisher("~detections", Detection2DArray, queue_size=1)
+        self.latency_pub = rospy.Publisher("~latency", Float64, queue_size=1)
 
     def image_callback(self, msg):
         self.frame_id = msg.header.frame_id
 
-        # t0 = time.perf_counter()
+        
         if self.compressed:
             np_image = np.frombuffer(msg.data, dtype=np.uint8)
             cv_image = cv2.imdecode(np_image, cv2.IMREAD_UNCHANGED)
         else:
             cv_image = self.img_bridge.imgmsg_to_cv2(msg, "rgb8")
             if (cv_image.shape[2] == 4):
-                # cv_image = cv_image[:,:,:3]
                 cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGBA2RGB)
 
+        t0 = time.perf_counter()
         self.cv_image = cv_image
 
         boxes, scores, idxs = self.predictor.inference(self.cv_image, self.conf, end2end=True)
-        # print((time.perf_counter() - t0)*1000, 'ms')
         
         detections = Detection2DArray()
         detections.header.stamp = msg.header.stamp
         detections.header.frame_id = msg.header.frame_id
-        now = rospy.get_rostime()
         for i in range(len(boxes)):
             min_x, min_y, max_x, max_y = boxes[i, 0], boxes[i, 1], boxes[i, 2], boxes[i, 3]
             center_x = (max_x+min_x)/2.0
@@ -396,8 +400,6 @@ class Yolov7Detector:
             
             crop = self.cv_image[int(min_y):int(max_y), int(min_x):int(max_x)].astype('uint8')
 
-            # res, buffer = cv2.imencode(".png", crop)
-
             instance = Detection2D()
             instance.header.stamp = msg.header.stamp
             instance.header.frame_id = msg.header.frame_id
@@ -408,23 +410,31 @@ class Yolov7Detector:
             instance.source_img.header.stamp = msg.header.stamp
 
             detections.detections.append(instance)
-
         self.detection_pub.publish(detections)
+
+        latency = rospy.Time.now() - msg.header.stamp
+        latency_msg = Float64()
+        latency_msg.data = latency.to_sec()
+        self.latency_pub.publish(latency_msg)            
 
         if self.display:
             display_img = vis(self.cv_image, boxes, scores, idxs, conf=self.conf, class_names=self.predictor.class_names)
             if self.compressed:
-                pub_msg = CompressedImage()
-                pub_msg.header.stamp = msg.header.stamp
-                pub_msg.format = "jpeg"
-                pub_msg.data = np.array(cv2.imencode('.jpg', display_img)[1]).tostring()
-                # Publish new image
-                self.image_pub.publish(pub_msg)
+                if(self.image_pub.get_num_connections() > 0):
+                    pub_msg = CompressedImage()
+                    pub_msg.header.stamp = msg.header.stamp
+                    pub_msg.format = "jpeg"
+                    pub_msg.data = np.array(cv2.imencode('.jpg', display_img)[1]).tostring()
+                    # Publish new image
+                    self.image_pub.publish(pub_msg)
             else:
-                pub_msg = self.img_bridge.cv2_to_imgmsg(self.cv_image, "rgb8")
-                pub_msg.header.frame_id = self.frame_id
-                pub_msg.header.stamp = msg.header.stamp
-                self.image_pub.publish(pub_msg)
+                if(self.image_pub.get_num_connections() > 0):
+                    pub_msg = self.img_bridge.cv2_to_imgmsg(self.cv_image, "rgb8")
+                    pub_msg.header.frame_id = self.frame_id
+                    pub_msg.header.stamp = msg.header.stamp
+                    self.image_pub.publish(pub_msg)
+
+        rospy.loginfo_throttle(1.0, 'YOLO : {} ms'.format((time.perf_counter() - t0)*1000))
 
 def main(args):
     rospy.init_node('detect', anonymous=True)

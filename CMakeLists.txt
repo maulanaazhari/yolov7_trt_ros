@@ -3,7 +3,7 @@ project(yolov7_trt_ros)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++14)
-option(CUDA_USE_STATIC_CUDA_RUNTIME ON)
+# option(CUDA_USE_STATIC_CUDA_RUNTIME ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_BUILD_TYPE Release)
 
@@ -20,9 +20,10 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
 )
 
-find_package(CUDA 11.8 REQUIRED)
-include_directories(/usr/local/cuda-11.8/include)
-link_directories(/usr/local/cuda-11.8/lib64)
+# find_package(CUDA 11.8 REQUIRED)
+# include_directories(/usr/local/cuda-11.8/include)
+# link_directories(/usr/local/cuda-11.8/lib64)
+
 # execute_process(COMMAND uname -m COMMAND tr -d '\n'
 #     OUTPUT_VARIABLE ARCHITECTURE
 #   )
@@ -38,8 +39,8 @@ link_directories(/usr/local/cuda-11.8/lib64)
 
 
 # for grabcut
-include_directories(/usr/local/include)
-link_directories(/usr/local/lib)
+# include_directories(/usr/local/include)
+# link_directories(/usr/local/lib)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Ofast -Wfatal-errors -D_MWAITXINTRIN_H_INCLUDED")
 
@@ -57,21 +58,21 @@ include_directories(
   ${CUDA_INCLUDE_DIRS}
 )
 
-add_library(${PROJECT_NAME}_end2end 
-            src/end2end_detect.cpp)
-target_include_directories(${PROJECT_NAME}_end2end PUBLIC
-  ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
-target_link_libraries(${PROJECT_NAME}_end2end
-            ${catkin_LIBRARIES} 
-            ${OpenCV_LIBRARIES}
-            ${CUDA_LIBRARIES}
-            nvinfer
-            nvinfer_plugin
-            cudart
-            cuda)
+# add_library(${PROJECT_NAME}_end2end 
+#             src/end2end_detect.cpp)
+# target_include_directories(${PROJECT_NAME}_end2end PUBLIC
+#   ${CUDA_TOOLKIT_ROOT_DIR}/lib64)
+# target_link_libraries(${PROJECT_NAME}_end2end
+#             ${catkin_LIBRARIES} 
+#             ${OpenCV_LIBRARIES}
+#             ${CUDA_LIBRARIES}
+#             nvinfer
+#             nvinfer_plugin
+#             cudart
+#             cuda)
 
-add_executable(end2end_detect src/end2end_detect)
-target_link_libraries(end2end_detect ${catkin_LIBRARIES} ${PROJECT_NAME}_end2end)
+# add_executable(end2end_detect src/end2end_detect)
+# target_link_libraries(end2end_detect ${catkin_LIBRARIES} ${PROJECT_NAME}_end2end)
 
 # catkin_python_setup()
 

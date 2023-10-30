@@ -369,14 +369,12 @@ class Yolov7Detector:
         else:
             cv_image = self.img_bridge.imgmsg_to_cv2(msg, "rgb8")
             if (cv_image.shape[2] == 4):
-                # cv_image = cv_image[:,:,:3]
                 cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGBA2RGB)
 
         t0 = time.perf_counter()
         self.cv_image = cv_image
 
         boxes, scores, idxs = self.predictor.inference(self.cv_image, self.conf, end2end=True)
-        # print((time.perf_counter() - t0)*1000, 'ms')
         
         detections = Detection2DArray()
         detections.header.stamp = msg.header.stamp
@@ -404,8 +402,6 @@ class Yolov7Detector:
             hypothesis.pose.pose.position.y = center_y
             
             crop = self.cv_image[int(min_y):int(max_y), int(min_x):int(max_x)].astype('uint8')
-
-            # res, buffer = cv2.imencode(".png", crop)
 
             instance = Detection2D()
             instance.header.stamp = msg.header.stamp
@@ -469,7 +465,6 @@ class Yolov7Detector:
                     pub_msg.header.stamp = msg.header.stamp
                     self.image_pub.publish(pub_msg)
 
-        # print('YOLO :', (time.perf_counter() - t0)*1000, 'ms')
         rospy.loginfo_throttle(1.0, 'YOLO : {} ms'.format((time.perf_counter() - t0)*1000))
 
 def main(args):

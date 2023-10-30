@@ -1,8 +1,10 @@
 <launch>
   <!-- <node pkg="rosbag" type="play" name="rosbag" required="true" args="$(find image_view)/test.bag"/> -->
-  <arg name="topic" default="/usb_cam/image"/>
-  <node name="extract" pkg="image_view" type="extract_images" respawn="false" required="true" output="screen" cwd="ROS_HOME">
+  <arg name="topic" default="/zed2i/zed_node/rgb/image_rect_color"/>
+  <node name="extract" pkg="image_view" type="extract_images" respawn="false" required="true" output="screen" cwd="ROS_HOME" args="compressed">
     <remap from="image" to="$(arg topic)"/>
+    <param name="filename_format" value="fieldtest002_20230825_%04i.jpg"/>
+    <param name="sec_per_frame" value="1"/>
   </node>
   <node name="republish" pkg="image_transport" type="republish" respawn="false" required="true" output="screen" args="compressed in:=$(arg topic) raw out:=$(arg topic)"></node>
 </launch>

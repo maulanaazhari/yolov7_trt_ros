@@ -175,13 +175,11 @@ class BaseEngine(object):
         import time
         img = np.ones((1,3,self.imgsz[0], self.imgsz[1]))
         img = np.ascontiguousarray(img, dtype=np.float32)
+        t0 = time.perf_counter()
         for _ in range(5):  # warmup
             _ = self.infer(img)
 
-        t0 = time.perf_counter()
-        for _ in range(100):  # calculate average time
-            _ = self.infer(img)
-        print(100/(time.perf_counter() - t0), 'FPS')
+        print(5/(time.perf_counter() - t0), 'FPS')
 
 
 def nms(boxes, scores, nms_thr):
